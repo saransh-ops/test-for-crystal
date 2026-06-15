@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Player Report — Crystalfbft</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--accent:#00f5d4;--accent-rgb:0,245,212;--bg:#080810;--bg2:#0e0e1a;--bg3:#141420;--glass:rgba(255,255,255,0.04);--glass-b:rgba(255,255,255,0.07);--text:#f0f0f8;--muted:#8888aa;--dim:#444466;--red:#ff4d4d;--yellow:#fbbf24;--green:#4ade80}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,212,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,212,.04) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse 80% 60% at 50% 30%,black,transparent);pointer-events:none;z-index:0}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(8,8,16,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--glass-b);padding:.875rem 2rem;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:700;color:var(--text);text-decoration:none;display:flex;align-items:center;gap:.5rem}
+.nav-logo span{color:var(--accent)}
+.nav-tabs{display:flex;gap:.375rem}
+.nav-tab{padding:.45rem 1rem;border-radius:7px;font-size:.78rem;font-weight:500;cursor:pointer;border:1px solid transparent;background:none;color:var(--muted);transition:all .2s;font-family:'Inter',sans-serif}
+.nav-tab.active,.nav-tab:hover{background:rgba(0,245,212,.08);border-color:rgba(0,245,212,.2);color:var(--accent)}
+
+/* LAYOUT */
+.page{display:none;position:relative;z-index:1}
+.page.active{display:block}
+.wrap{max-width:680px;margin:0 auto;padding:3rem 1.5rem 5rem}
+
+/* HERO */
+.hero{text-align:center;padding:3rem 0 2rem}
+.hero-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,77,77,.1);border:1px solid rgba(255,77,77,.2);color:var(--red);font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.35rem .875rem;border-radius:100px;margin-bottom:1.25rem}
+.hero h1{font-size:clamp(1.75rem,4vw,2.5rem);font-weight:800;letter-spacing:-.03em;margin-bottom:.75rem}
+.hero h1 span{color:var(--accent)}
+.hero p{color:var(--muted);font-size:.9rem;line-height:1.75;max-width:480px;margin:0 auto}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--glass-b);border-radius:16px;padding:2rem;margin-bottom:1.25rem}
+.card-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.card-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--glass-b),transparent)}
+
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-group{margin-bottom:1.125rem}
+.form-label{display:block;font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--glass-b);color:var(--text);border-radius:9px;padding:.75rem 1rem;font-family:'Inter',sans-serif;font-size:.875rem;outline:none;transition:border-color .2s,box-shadow .2s;resize:none}
+.form-input:focus{border-color:rgba(0,245,212,.4);box-shadow:0 0 0 3px rgba(0,245,212,.06)}
+.form-input::placeholder{color:var(--dim)}
+.form-input.error{border-color:rgba(255,77,77,.5);box-shadow:0 0 0 3px rgba(255,77,77,.06)}
+.form-input:focus.error{border-color:rgba(255,77,77,.6)}
+select.form-input option{background:var(--bg3);color:var(--text)}
+
+/* REASON SELECTOR */
+.reason-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.reason-opt{padding:.625rem .5rem;background:var(--bg3);border:1px solid var(--glass-b);border-radius:8px;font-size:.75rem;font-weight:500;text-align:center;cursor:pointer;transition:all .2s;color:var(--muted);user-select:none}
+.reason-opt:hover{border-color:rgba(0,245,212,.3);color:var(--text)}
+.reason-opt.selected{background:rgba(0,245,212,.08);border-color:var(--accent);color:var(--accent)}
+.reason-opt.high.selected{background:rgba(255,77,77,.08);border-color:var(--red);color:var(--red)}
+.reason-opt.medium.selected{background:rgba(251,191,36,.08);border-color:var(--yellow);color:var(--yellow)}
+.reason-opt-icon{font-size:1.1rem;margin-bottom:.25rem;display:block}
+
+/* PRIORITY BADGE */
+.priority-badge{display:inline-flex;align-items:center;gap:.375rem;padding:.3rem .75rem;border-radius:100px;font-size:.7rem;font-weight:700;margin-top:.875rem;transition:all .3s}
+.priority-badge.high{background:rgba(255,77,77,.1);border:1px solid rgba(255,77,77,.2);color:var(--red)}
+.priority-badge.medium{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);color:var(--yellow)}
+.priority-badge.low{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);color:var(--green)}
+
+/* CHAR COUNT */
+.char-count{font-size:.68rem;color:var(--dim);text-align:right;margin-top:.3rem}
+.char-count.warn{color:var(--yellow)}
+.char-count.over{color:var(--red)}
+
+/* SUBMIT */
+.btn-submit{width:100%;padding:.9rem;background:var(--accent);color:#080810;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:.5rem;letter-spacing:.02em}
+.btn-submit:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 0 30px rgba(0,245,212,.3)}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.err-msg{font-size:.78rem;color:var(--red);margin-top:-.5rem;margin-bottom:.75rem;display:flex;align-items:center;gap:.35rem;animation:fade-up .25s ease}
+@keyframes fade-up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* RULES */
+.rules-list{display:flex;flex-direction:column;gap:.625rem}
+.rule-item{display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 1rem;background:var(--glass);border:1px solid var(--glass-b);border-radius:9px;font-size:.82rem;color:var(--muted);line-height:1.55}
+.rule-icon{color:var(--accent);flex-shrink:0;margin-top:.1rem;font-size:.85rem}
+
+/* SUCCESS MODAL */
+#successModal{display:none;position:fixed;inset:0;z-index:500;background:rgba(8,8,16,.9);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:1.5rem}
+.modal-box{background:var(--bg2);border:1px solid var(--glass-b);border-radius:20px;padding:2.5rem;max-width:400px;width:100%;text-align:center}
+.modal-icon{width:60px;height:60px;border-radius:50%;background:rgba(0,245,212,.1);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:1.5rem;color:var(--accent)}
+.modal-id{font-family:'JetBrains Mono',monospace;font-size:1.15rem;font-weight:700;color:var(--accent);letter-spacing:.05em;padding:.875rem;background:var(--bg3);border-radius:9px;margin:1rem 0;border:1px solid var(--glass-b)}
+.modal-btns{display:flex;gap:.625rem;margin-top:1.25rem}
+.modal-btn{flex:1;padding:.675rem;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;border:none}
+.modal-btn-copy{background:var(--glass);border:1px solid var(--glass-b)!important;color:var(--muted)}
+.modal-btn-copy:hover{border-color:var(--accent)!important;color:var(--accent)}
+.modal-btn-track{background:var(--accent);color:#080810}
+.modal-btn-track:hover{filter:brightness(1.1)}
+
+/* STATUS PAGE */
+.search-box{display:flex;gap:.625rem;margin-bottom:1.5rem}
+.search-input{flex:1;background:var(--bg2);border:1px solid var(--glass-b);color:var(--text);border-radius:9px;padding:.75rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.875rem;outline:none;transition:border-color .2s;letter-spacing:.05em}
+.search-input:focus{border-color:rgba(0,245,212,.4)}
+.search-input::placeholder{color:var(--dim);font-family:'Inter',sans-serif;letter-spacing:0}
+.search-btn{background:var(--accent);color:#080810;border:none;border-radius:9px;padding:.75rem 1.25rem;font-size:.875rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;white-space:nowrap}
+.search-btn:hover{filter:brightness(1.1)}
+
+/* REPORT RESULT */
+.report-result{background:var(--bg2);border:1px solid var(--glass-b);border-radius:14px;overflow:hidden;display:none}
+.rr-header{padding:1.25rem 1.5rem;background:var(--bg3);border-bottom:1px solid var(--glass-b);display:flex;align-items:center;justify-content:space-between}
+.rr-id{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--muted)}
+.status-pill{padding:.25rem .75rem;border-radius:100px;font-size:.68rem;font-weight:700;letter-spacing:.08em}
+.status-Open{background:rgba(251,191,36,.1);color:var(--yellow);border:1px solid rgba(251,191,36,.2)}
+.status-Investigating{background:rgba(0,245,212,.1);color:var(--accent);border:1px solid rgba(0,245,212,.2)}
+.status-Resolved{background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.2)}
+.status-Rejected{background:rgba(255,77,77,.1);color:var(--red);border:1px solid rgba(255,77,77,.2)}
+.rr-body{padding:1.5rem}
+.rr-field{display:flex;justify-content:space-between;align-items:flex-start;padding:.5rem 0;border-bottom:1px solid var(--glass-b);font-size:.84rem}
+.rr-field:last-child{border-bottom:none}
+.rr-label{color:var(--dim);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;margin-right:1rem}
+.rr-val{color:var(--text);text-align:right;word-break:break-word}
+.rr-notes{margin-top:1.25rem;padding:1rem;background:var(--bg3);border-radius:9px;border:1px solid var(--glass-b)}
+.rr-notes-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:.75rem}
+.note-msg{padding:.5rem .75rem;border-radius:7px;margin-bottom:.5rem;font-size:.8rem;line-height:1.55}
+.note-staff{background:rgba(0,245,212,.06);border:1px solid rgba(0,245,212,.1);color:var(--text)}
+.note-player{background:var(--glass);border:1px solid var(--glass-b);color:var(--muted)}
+.note-time{font-size:.65rem;color:var(--dim);margin-top:.2rem}
+
+/* FOLLOW UP */
+.followup-box{margin-top:1.25rem;padding:1.125rem;background:var(--bg3);border:1px solid var(--glass-b);border-radius:9px}
+.followup-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:.75rem}
+.followup-input{width:100%;background:var(--bg2);border:1px solid var(--glass-b);color:var(--text);border-radius:7px;padding:.625rem .875rem;font-family:'Inter',sans-serif;font-size:.83rem;outline:none;resize:none;transition:border-color .2s}
+.followup-input:focus{border-color:rgba(0,245,212,.3)}
+.followup-btn{width:100%;margin-top:.5rem;padding:.625rem;background:transparent;border:1px solid rgba(0,245,212,.3);color:var(--accent);border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+.followup-btn:hover{background:rgba(0,245,212,.08)}
+.live-indicator{display:inline-flex;align-items:center;gap:.35rem;font-size:.65rem;color:var(--accent);margin-top:.75rem}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:pulse-dot 1.5s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+
+.error-box{padding:1.5rem;text-align:center;color:var(--red);font-size:.875rem;display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.empty-state{text-align:center;padding:3rem 1.5rem;color:var(--muted)}
+.empty-state i{font-size:2.5rem;margin-bottom:1rem;color:var(--dim)}
+
+@media(max-width:600px){
+  .form-row{grid-template-columns:1fr}
+  .reason-grid{grid-template-columns:repeat(2,1fr)}
+  .modal-btns{flex-direction:column}
+  nav{padding:.75rem 1rem}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">
+    <i class="fa-solid fa-shield-halved" style="color:var(--accent)"></i>
+    Crystal<span>fbft</span>
+  </a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('report')">
+      <i class="fa-solid fa-flag"></i> Report
+    </button>
+    <button class="nav-tab" onclick="switchPage('track')">
+      <i class="fa-solid fa-magnifying-glass"></i> Track
+    </button>
+  </div>
+</nav>
+
+<!-- REPORT PAGE -->
+<div id="page-report" class="page active">
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-badge"><i class="fa-solid fa-triangle-exclamation"></i> Report a Player</div>
+      <h1>Report a <span>Rule Breaker</span></h1>
+      <p>All reports go directly to staff and are reviewed within 24 hours. False reports may result in punishment.</p>
+    </div>
+
+    <!-- RULES -->
+    <div class="card">
+      <div class="card-title"><i class="fa-solid fa-scroll"></i> Before You Report</div>
+      <div class="rules-list">
+        <div class="rule-item"><i class="fa-solid fa-check rule-icon"></i>Include evidence when possible — screenshots, recordings, or coordinates</div>
+        <div class="rule-item"><i class="fa-solid fa-check rule-icon"></i>Make sure you have the correct and exact username of the player</div>
+        <div class="rule-item"><i class="fa-solid fa-xmark rule-icon" style="color:var(--red)"></i>False or spam reports will result in a punishment for the reporter</div>
+        <div class="rule-item"><i class="fa-solid fa-xmark rule-icon" style="color:var(--red)"></i>You can only report the same player once every 24 hours</div>
+      </div>
+    </div>
+
+    <!-- FORM -->
+    <div class="card">
+      <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Report Details</div>
+      <form id="reportForm" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Your Username *</label>
+            <input type="text" id="reporter" class="form-input" placeholder="YourMinecraftName" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Accused Player *</label>
+            <input type="text" id="accused" class="form-input" placeholder="TheirExactUsername" required/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Reason *</label>
+          <div class="reason-grid">
+            <div class="reason-opt high" onclick="selectReason('Hacking',this)">
+              <span class="reason-opt-icon">🤖</span>Hacking
+            </div>
+            <div class="reason-opt medium" onclick="selectReason('Griefing',this)">
+              <span class="reason-opt-icon">💣</span>Griefing
+            </div>
+            <div class="reason-opt medium" onclick="selectReason('Harassment',this)">
+              <span class="reason-opt-icon">💬</span>Harassment
+            </div>
+            <div class="reason-opt high" onclick="selectReason('Bug Abuse',this)">
+              <span class="reason-opt-icon">🐛</span>Bug Abuse
+            </div>
+            <div class="reason-opt" onclick="selectReason('Chat Abuse',this)">
+              <span class="reason-opt-icon">🔤</span>Chat Abuse
+            </div>
+            <div class="reason-opt" onclick="selectReason('Other',this)">
+              <span class="reason-opt-icon">📋</span>Other
+            </div>
+          </div>
+          <div id="priorityBadge" style="display:none" class="priority-badge low"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description * <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--dim)">(min 20 chars)</span></label>
+          <textarea id="description" class="form-input" rows="4" placeholder="Describe exactly what happened, when, and where on the server..." maxlength="1000" oninput="updateCharCount(this,'descCount',1000)" required></textarea>
+          <div class="char-count" id="descCount">0 / 1000</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Evidence Link <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--dim)">(optional but recommended)</span></label>
+          <input type="url" id="evidence" class="form-input" placeholder="https://imgur.com/... or YouTube link"/>
+        </div>
+
+        <div id="formError" style="display:none" class="err-msg"></div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <i class="fa-solid fa-paper-plane"></i> Submit Report
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- TRACK PAGE -->
+<div id="page-track" class="page">
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-badge" style="background:rgba(0,245,212,.1);border-color:rgba(0,245,212,.2);color:var(--accent)">
+        <i class="fa-solid fa-ticket"></i> Track Report
+      </div>
+      <h1>Check Your <span>Report Status</span></h1>
+      <p>Enter the Report ID you received after submitting your report to see its current status and any staff responses.</p>
+    </div>
+
+    <div class="search-box">
+      <input type="text" id="trackInput" class="search-input" placeholder="RPT-XXXXXX" oninput="this.value=this.value.toUpperCase()"/>
+      <button class="search-btn" onclick="lookupReport()">
+        <i class="fa-solid fa-magnifying-glass"></i> Look Up
+      </button>
+    </div>
+
+    <div id="reportResult"></div>
+  </div>
+</div>
+
+<!-- SUCCESS MODAL -->
+<div id="successModal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(8,8,16,.9);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:1.5rem">
+  <div class="modal-box">
+    <div class="modal-icon"><i class="fa-solid fa-check"></i></div>
+    <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:.375rem">Report Submitted!</h3>
+    <p style="color:var(--muted);font-size:.84rem;line-height:1.65">Staff have been notified. Save your Report ID to track the status.</p>
+    <div class="modal-id" id="displayId"></div>
+    <div class="modal-btns">
+      <button class="modal-btn modal-btn-copy" id="copyBtn" onclick="copyId()">
+        <i class="fa-solid fa-copy"></i> Copy ID
+      </button>
+      <button class="modal-btn modal-btn-track" onclick="closeModal();switchPage('track')">
+        <i class="fa-solid fa-magnifying-glass"></i> Track It
+      </button>
+    </div>
+    <button onclick="closeModal()" style="background:none;border:none;color:var(--dim);font-size:.75rem;cursor:pointer;margin-top:1rem;text-decoration:underline">Close</button>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz5D23bWnGDcE14FnYeVL-1P_xH3bjmc5eeNrlJh8XJjLCKrgdNjEzoLP9KoL5JvzFa/exec";
+let selectedReason = "";
+let liveInterval = null;
+let currentReportId = null;
+
+// PAGE SWITCHER
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-tab')[page === 'report' ? 0 : 1].classList.add('active');
+  if (page !== 'track') stopLive();
+}
+
+// REASON SELECTOR
+function selectReason(reason, el) {
+  document.querySelectorAll('.reason-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedReason = reason;
+  const badge = document.getElementById('priorityBadge');
+  badge.style.display = 'inline-flex';
+  const high = ['Hacking', 'Bug Abuse'].includes(reason);
+  const med = ['Griefing', 'Harassment'].includes(reason);
+  badge.className = 'priority-badge ' + (high ? 'high' : med ? 'medium' : 'low');
+  badge.innerHTML = (high ? '🔴 HIGH PRIORITY' : med ? '🟡 MEDIUM PRIORITY' : '🟢 LOW PRIORITY') + ' — Will be reviewed accordingly';
+}
+
+// CHAR COUNT
+function updateCharCount(el, countId, max) {
+  const len = el.value.length;
+  const el2 = document.getElementById(countId);
+  el2.textContent = len + ' / ' + max;
+  el2.className = 'char-count' + (len > max * 0.9 ? ' warn' : '') + (len >= max ? ' over' : '');
+}
+
+// FORM SUBMIT
+document.getElementById('reportForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const reporter = document.getElementById('reporter').value.trim();
+  const accused = document.getElementById('accused').value.trim();
+  const description = document.getElementById('description').value.trim();
+  const evidence = document.getElementById('evidence').value.trim();
+  const errEl = document.getElementById('formError');
+
+  // Validate
+  let err = '';
+  document.querySelectorAll('.form-input').forEach(i => i.classList.remove('error'));
+  if (!reporter) { document.getElementById('reporter').classList.add('error'); err = 'Please enter your username.'; }
+  else if (!accused) { document.getElementById('accused').classList.add('error'); err = 'Please enter the accused player\'s username.'; }
+  else if (reporter.toLowerCase() === accused.toLowerCase()) { err = 'You cannot report yourself.'; }
+  else if (!selectedReason) { err = 'Please select a reason.'; }
+  else if (description.length < 20) { document.getElementById('description').classList.add('error'); err = 'Description must be at least 20 characters.'; }
+
+  if (err) {
+    errEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ' + err;
+    errEl.style.display = 'flex';
+    setTimeout(() => errEl.style.display = 'none', 4000);
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+
+  const params = new URLSearchParams();
+  params.append('action', 'submit_report');
+  params.append('reporter', reporter);
+  params.append('accused', accused);
+  params.append('reason', selectedReason);
+  params.append('description', description);
+  params.append('evidence', evidence);
+
+  fetch(SCRIPT_URL, { method: 'POST', body: params })
+    .then(r => r.json())
+    .then(data => {
+      if (data.result === 'success') {
+        document.getElementById('displayId').textContent = data.reportId;
+        const modal = document.getElementById('successModal');
+        modal.style.display = 'flex';
+        this.reset();
+        selectedReason = '';
+        document.querySelectorAll('.reason-opt').forEach(o => o.classList.remove('selected'));
+        document.getElementById('priorityBadge').style.display = 'none';
+        document.getElementById('descCount').textContent = '0 / 1000';
+      } else {
+        errEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ' + (data.message || 'Submission failed. Try again.');
+        errEl.style.display = 'flex';
+        setTimeout(() => errEl.style.display = 'none', 5000);
+      }
+    })
+    .catch(() => {
+      errEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Connection error. Please try again.';
+      errEl.style.display = 'flex';
+      setTimeout(() => errEl.style.display = 'none', 5000);
+    })
+    .finally(() => { btn.disabled = false; btn.innerHTML = orig; });
+});
+
+// MODAL
+function closeModal() { document.getElementById('successModal').style.display = 'none'; }
+function copyId() {
+  const id = document.getElementById('displayId').textContent;
+  navigator.clipboard.writeText(id).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+    setTimeout(() => btn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy ID', 2000);
+  });
+}
+
+// LOOKUP
+function lookupReport(silent = false) {
+  const id = silent ? currentReportId : document.getElementById('trackInput').value.trim().toUpperCase();
+  const res = document.getElementById('reportResult');
+  if (!id) { if (!silent) alert('Please enter a Report ID'); return; }
+  currentReportId = id;
+  if (!silent) res.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Looking up report...</p></div>';
+  res.style.display = 'block';
+
+  fetch(`${SCRIPT_URL}?action=get_report&reportId=${encodeURIComponent(id)}&_cb=${Date.now()}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.result === 'error' || !data.reportId || data.reportId.toUpperCase() !== id) {
+        if (!silent) res.innerHTML = '<div class="error-box"><i class="fa-solid fa-circle-xmark" style="font-size:2rem"></i><p>Report not found. Check your Report ID and try again.</p></div>';
+        stopLive(); return;
+      }
+      renderReport(data);
+      if (!silent) startLive();
+    })
+    .catch(() => {
+      if (!silent) res.innerHTML = '<div class="error-box"><i class="fa-solid fa-circle-xmark" style="font-size:2rem"></i><p>Connection error. Try again.</p></div>';
+    });
+}
+
+function renderReport(d) {
+  const res = document.getElementById('reportResult');
+  const notes = d.staffNotes ? d.staffNotes.split('\n').filter(l => l.trim()).map(l => {
+    const m = l.match(/^\[(.*?)\] \[(.*?)\]: (.*)$/);
+    if (!m) return '';
+    const isStaff = m[2].toLowerCase() !== 'player';
+    return `<div class="note-msg ${isStaff ? 'note-staff' : 'note-player'}">
+      <div>${m[3]}</div>
+      <div class="note-time">${m[2]} · ${m[1]}</div>
+    </div>`;
+  }).join('') : '';
+
+  res.style.display = 'block';
+  res.innerHTML = `
+    <div class="report-result" style="display:block">
+      <div class="rr-header">
+        <span class="rr-id"><i class="fa-solid fa-ticket" style="margin-right:.35rem;color:var(--accent)"></i>${d.reportId}</span>
+        <span class="status-pill status-${d.status}">${d.status}</span>
+      </div>
+      <div class="rr-body">
+        <div class="rr-field"><span class="rr-label">Accused</span><span class="rr-val" style="color:#ff4d4d;font-weight:700">${d.accused}</span></div>
+        <div class="rr-field"><span class="rr-label">Reporter</span><span class="rr-val">${d.reporter}</span></div>
+        <div class="rr-field"><span class="rr-label">Reason</span><span class="rr-val">${d.reason}</span></div>
+        <div class="rr-field"><span class="rr-label">Submitted</span><span class="rr-val">${d.timestamp}</span></div>
+        <div class="rr-field"><span class="rr-label">Last Updated</span><span class="rr-val">${d.lastUpdated || d.timestamp}</span></div>
+        ${d.resolvedBy ? `<div class="rr-field"><span class="rr-label">Handled By</span><span class="rr-val" style="color:var(--accent)">${d.resolvedBy}</span></div>` : ''}
+        <div class="rr-field" style="flex-direction:column;gap:.5rem;align-items:flex-start">
+          <span class="rr-label">Description</span>
+          <span class="rr-val" style="text-align:left;color:var(--muted)">${d.description}</span>
+        </div>
+        ${d.evidence ? `<div class="rr-field"><span class="rr-label">Evidence</span><span class="rr-val"><a href="${d.evidence}" target="_blank" style="color:var(--accent)">View <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.65rem"></i></a></span></div>` : ''}
+
+        ${notes ? `<div class="rr-notes"><div class="rr-notes-title"><i class="fa-solid fa-comments" style="margin-right:.35rem"></i>Staff Communication</div>${notes}</div>` : ''}
+
+        <div class="followup-box">
+          <div class="followup-title"><i class="fa-solid fa-reply" style="margin-right:.35rem"></i>Add Follow-up Info</div>
+          <textarea id="followupText" class="followup-input" rows="2" placeholder="Add any additional information or evidence..."></textarea>
+          <button class="followup-btn" id="followupBtn" onclick="sendFollowup('${d.reportId}')">
+            <i class="fa-solid fa-paper-plane"></i> Send Follow-up
+          </button>
+        </div>
+
+        <div class="live-indicator">
+          <span class="live-dot"></span> Live — refreshing every 10s
+        </div>
+      </div>
+    </div>`;
+}
+
+function sendFollowup(reportId) {
+  const msg = document.getElementById('followupText').value.trim();
+  const btn = document.getElementById('followupBtn');
+  if (!msg) return;
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+  const params = new URLSearchParams();
+  params.append('action', 'user_reply');
+  params.append('reportId', reportId);
+  params.append('message', msg);
+  fetch(SCRIPT_URL, { method: 'POST', body: params })
+    .then(r => r.json())
+    .then(() => { document.getElementById('followupText').value = ''; lookupReport(true); })
+    .catch(() => lookupReport(true))
+    .finally(() => { btn.disabled = false; btn.innerHTML = orig; });
+}
+
+function startLive() {
+  stopLive();
+  liveInterval = setInterval(() => lookupReport(true), 10000);
+}
+function stopLive() {
+  if (liveInterval) { clearInterval(liveInterval); liveInterval = null; }
+}
+
+// Enter key on search
+document.getElementById('trackInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') lookupReport();
+});
+
+// Auto-track if URL has ?id=
+const urlId = new URLSearchParams(window.location.search).get('id');
+if (urlId) {
+  switchPage('track');
+  document.getElementById('trackInput').value = urlId.toUpperCase();
+  lookupReport();
+}
+</script>
+</body>
+</html>
