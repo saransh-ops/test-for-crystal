@@ -1,6 +1,6 @@
 {
   "server_name": "Crystalfbft",
-  "google_script_url": "https://script.google.com/macros/s/AKfycbz5D23bWnGDcE14FnYeVL-1P_xH3bjmc5eeNrlJh8XJjLCKrgdNjEzoLP9KoL5JvzFa/exec",
+  "google_script_url": "https://script.google.com/macros/s/AKfycbzr-0X7KY9UidGPGIYbPFUCsF8wwTAFEDDMLFYQTYBjFSy32g23QkAyIWZRzCc51dKr/exec",
   "discord_webhook_url": "https://discord.com/api/webhooks/1515968659535822938/XwUIL5Xu81uvcfgunvXofIpLJOC3vobkoqOPizdXY8brwBcLqu0cSSmSJhQzRfZ7ToFW",
   "staff_password_hash": "7f6df2b6f80b111da56907c390491e00c2e21a3375a83c8ebc2520ec61afbcb9",
   "version": "1.0.0"

@@ -77,31 +77,25 @@ def api_post(cfg, data={}):
         print(Fore.RED + f"  ✗ Connection error: {e}")
         return None
 
-def send_discord(cfg, report):
-    if not cfg.get('discord_webhook_url'):
+def send_discord(cfg, title, description, color=3447003):
+    webhook = cfg.get("discord_webhook_url")
+
+    if not webhook:
         return
-    priority = REASON_PRIORITY.get(report.get('reason', ''), '🟢 LOW')
-    embed = {
+
+    payload = {
         "embeds": [{
-            "title": f"🚨 New Player Report — {report.get('reason', 'Unknown')}",
-            "color": 0xFF4444 if "HIGH" in priority else 0xFFAA00 if "MEDIUM" in priority else 0x44FF44,
-            "fields": [
-                {"name": "📋 Report ID", "value": f"`{report.get('reportId', 'N/A')}`", "inline": True},
-                {"name": "⚠️ Priority", "value": priority, "inline": True},
-                {"name": "👤 Reporter", "value": report.get('reporter', 'N/A'), "inline": True},
-                {"name": "🎯 Accused", "value": f"**{report.get('accused', 'N/A')}**", "inline": True},
-                {"name": "📁 Reason", "value": report.get('reason', 'N/A'), "inline": True},
-                {"name": "📅 Time", "value": report.get('timestamp', 'N/A'), "inline": True},
-                {"name": "📝 Description", "value": report.get('description', 'N/A')[:500], "inline": False},
-            ],
-            "footer": {"text": f"Crystalfbft Report System • {datetime.now().strftime('%Y-%m-%d %H:%M')}"},
-            "thumbnail": {"url": f"https://mc-heads.net/avatar/{report.get('accused', 'Steve')}"}
+            "title": title,
+            "description": description,
+            "color": color,
+            "footer": {
+                "text": f"{cfg.get('server_name', 'Server')} Report System"
+            }
         }]
     }
-    if report.get('evidence'):
-        embed['embeds'][0]['fields'].append({"name": "🔗 Evidence", "value": report.get('evidence'), "inline": False})
+
     try:
-        requests.post(cfg['discord_webhook_url'], json=embed, timeout=5)
+        requests.post(webhook, json=payload, timeout=5)
     except:
         pass
 
@@ -157,7 +151,7 @@ def view_report_full(cfg, report_id):
 
     print(Fore.WHITE + "\n  " + "─" * 50)
     print(f"  {Fore.CYAN}[1]{Fore.WHITE} Change Status   "
-          f"{Fore.CYAN}[2]{Fore.WHITE} Add Note   "
+          f"{Fore.CYAN}[2]{Fore.WHITE} Reply   "
           f"{Fore.CYAN}[3]{Fore.WHITE} Back")
     choice = input(Fore.CYAN + "\n  › ").strip()
 
@@ -176,6 +170,14 @@ def view_report_full(cfg, report_id):
                 'resolvedBy': staff
             })
             if result and result.get('result') == 'success':
+
+                send_discord(
+                    cfg,
+                    f"📌 Report {report_id} Updated",
+                    f"**Status:** {new_status}\n**Staff:** {staff}",
+                    5763719
+                )
+                
                 print(Fore.GREEN + f"\n  ✓ Status updated to {new_status}")
             else:
                 print(Fore.RED + "  ✗ Failed to update")
@@ -191,6 +193,14 @@ def view_report_full(cfg, report_id):
             'staffName': staff
         })
         if result and result.get('result') == 'success':
+
+            send_discord(
+                cfg,
+                f"💬 Staff Reply — {report_id}",
+                f"**Staff:** {staff}\n\n{note}",
+                15844367
+            )
+            
             print(Fore.GREEN + "\n  ✓ Note added")
         else:
             print(Fore.RED + "  ✗ Failed")
@@ -293,7 +303,7 @@ def settings_menu(cfg):
             print(Fore.GREEN + "  ✓ Saved")
             input()
         elif choice == '3':
-            pw = input(Fore.WHITE + "\n  New password: ").strip()
+            pw = pwinput(prompt=Fore.WHITE + "\n  New password: ", mask="*")
             cfg['staff_password_hash'] = hash_password(pw)
             save_config(cfg)
             print(Fore.GREEN + "  ✓ Password updated")
@@ -314,8 +324,8 @@ def login(cfg):
 
     banner()
     print(Fore.WHITE + Style.BRIGHT + "  STAFF LOGIN\n")
-    import getpass
-    pw = getpass.getpass(Fore.WHITE + "  Password: ")
+    from pwinput import pwinput
+    pw = pwinput(prompt=Fore.WHITE + "  Password: ", mask="*")
     if hash_password(pw) == cfg['staff_password_hash']:
         print(Fore.GREEN + "\n  ✓ Access granted")
         import time; time.sleep(0.8)

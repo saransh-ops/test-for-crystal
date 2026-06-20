@@ -5,7 +5,7 @@
 // ============================================================
 
 const SHEET_NAME = "Reports";
-const DISCORD_WEBHOOK = ""; // Optional: set here or via CLI
+const DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1517479910267027576/kGyVz3P2CAUmMuU0aMgs__sYozRgK95-4pfw8HQi7p4P_nSS9AJGZ627an8aatavI6P8"; // REQUIRED — get from Discord channel settings > Integrations > Webhooks
 
 function generateReportId() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -14,8 +14,10 @@ function generateReportId() {
   return id;
 }
 
+const SPREADSHEET_ID = "1dr-BiEOH5jBDkJPYAmqgCJH7d7YrXavE-TKm0RFxwpA"; // paste the ID from your sheet URL
+
 function getSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
@@ -60,7 +62,9 @@ function doGet(e) {
 }
 
 function submitReport(params) {
+  Logger.log("submitReport called with: " + JSON.stringify(params));
   const sheet = getSheet();
+  Logger.log("Sheet obtained: " + sheet.getName());
   const reportId = generateReportId();
   const timestamp = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
 
@@ -75,6 +79,7 @@ function submitReport(params) {
       data[i][3].toLowerCase() === (params.accused || "").toLowerCase() &&
       hoursDiff < 24
     ) {
+      Logger.log("Duplicate report blocked");
       return jsonResponse({ result: "error", message: "You already reported this player recently. Please wait 24 hours." });
     }
   }
@@ -92,6 +97,7 @@ function submitReport(params) {
     "",
     timestamp
   ]);
+  Logger.log("Row appended: " + reportId);
 
   // Color row by priority
   const lastRow = sheet.getLastRow();
@@ -99,6 +105,7 @@ function submitReport(params) {
   const medPriority = ["Griefing", "Harassment"].includes(params.reason);
   const color = highPriority ? "#3b0a0a" : medPriority ? "#2d2200" : "#0a1a0a";
   sheet.getRange(lastRow, 1, 1, 11).setBackground(color);
+  Logger.log("Row colored");
 
   const report = {
     reportId, timestamp,
@@ -109,7 +116,9 @@ function submitReport(params) {
     evidence: params.evidence
   };
 
+  Logger.log("About to call sendDiscordAlert");
   sendDiscordAlert(report);
+  Logger.log("sendDiscordAlert call finished");
   return jsonResponse({ result: "success", reportId });
 }
 
@@ -231,40 +240,138 @@ function userReply(params) {
   return jsonResponse({ result: "error", message: "Report not found." });
 }
 
+function testWebhook() {
+  sendDiscordAlert({
+    reportId: "RPT-TEST01",
+    timestamp: new Date().toString(),
+    reporter: "TestUser",
+    accused: "TestAccused",
+    reason: "Other",
+    description: "This is a manual test from the Apps Script editor."
+  });
+}
+
 function sendDiscordAlert(report) {
-  const webhook = DISCORD_WEBHOOK;
-  if (!webhook) return;
-  const priority = ["Hacking","Bug Abuse"].includes(report.reason) ? "🔴 HIGH"
-    : ["Griefing","Harassment"].includes(report.reason) ? "🟡 MEDIUM" : "🟢 LOW";
-  const color = priority.includes("HIGH") ? 16711680 : priority.includes("MEDIUM") ? 16753920 : 65280;
-  const payload = {
-    embeds: [{
-      title: `🚨 New Report — ${report.reason}`,
-      color,
-      fields: [
-        { name: "📋 Report ID", value: `\`${report.reportId}\``, inline: true },
-        { name: "⚠️ Priority", value: priority, inline: true },
-        { name: "👤 Reporter", value: report.reporter || "Anonymous", inline: true },
-        { name: "🎯 Accused", value: `**${report.accused}**`, inline: true },
-        { name: "📝 Description", value: (report.description || "N/A").substring(0, 500) }
-      ],
-      thumbnail: { url: `https://mc-heads.net/avatar/${report.accused}` },
-      footer: { text: `Crystalfbft Report System` },
-      timestamp: new Date().toISOString()
-    }]
-  };
-  if (report.evidence) payload.embeds[0].fields.push({ name: "🔗 Evidence", value: report.evidence });
+  Logger.log("sendDiscordAlert entered");
+
   try {
-    UrlFetchApp.fetch(webhook, {
+    const webhook = DISCORD_WEBHOOK;
+
+    if (!webhook) {
+      Logger.log("Webhook URL missing");
+      return;
+    }
+
+    const priority =
+      ["Hacking", "Bug Abuse"].includes(report.reason)
+        ? "🔴 HIGH"
+        : ["Griefing", "Harassment"].includes(report.reason)
+        ? "🟡 MEDIUM"
+        : "🟢 LOW";
+
+    const color =
+      priority.includes("HIGH")
+        ? 16711680
+        : priority.includes("MEDIUM")
+        ? 16753920
+        : 65280;
+
+    const payload = {
+      embeds: [
+        {
+          title: "🚨 New Player Report",
+          color: color,
+
+          thumbnail: {
+            url: "https://mc-heads.net/avatar/" + encodeURIComponent(report.accused || "Steve")
+          },
+
+          fields: [
+            {
+              name: "📋 Report ID",
+              value: String(report.reportId || "Unknown"),
+              inline: true
+            },
+            {
+              name: "⚠️ Priority",
+              value: priority,
+              inline: true
+            },
+            {
+              name: "👤 Reporter",
+              value: String(report.reporter || "Anonymous"),
+              inline: true
+            },
+            {
+              name: "🎯 Accused",
+              value: String(report.accused || "Unknown"),
+              inline: true
+            },
+            {
+              name: "📝 Reason",
+              value: String(report.reason || "Other"),
+              inline: true
+            },
+            {
+              name: "📄 Description",
+              value: String(report.description || "No description").substring(0, 1000)
+            }
+          ],
+
+          footer: {
+            text: "Crystalfbft Report System"
+          },
+
+          timestamp: new Date().toISOString()
+        }
+      ]
+    };
+
+    if (report.evidence) {
+      payload.embeds[0].fields.push({
+        name: "🔗 Evidence",
+        value: String(report.evidence).substring(0, 1000)
+      });
+    }
+
+    Logger.log("Payload: " + JSON.stringify(payload));
+
+    const response = UrlFetchApp.fetch(webhook, {
       method: "post",
       contentType: "application/json",
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
-  } catch(e) {}
+
+    Logger.log("Discord code: " + response.getResponseCode());
+    Logger.log("Discord body: " + response.getContentText());
+
+  } catch (e) {
+    Logger.log("Discord exception: " + e);
+    Logger.log("Discord stack: " + e.stack);
+  }
+}
+
+function testWebhookOnly() {
+  const response = UrlFetchApp.fetch(DISCORD_WEBHOOK, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({
+      content: "Webhook test at " + new Date()
+    }),
+    muteHttpExceptions: true
+  });
+
+  Logger.log(response.getResponseCode());
+  Logger.log(response.getContentText());
 }
 
 function jsonResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doOptions(e) {
+  return ContentService.createTextOutput("")
+    .setMimeType(ContentService.MimeType.TEXT);
 }
