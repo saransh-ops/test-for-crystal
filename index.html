@@ -282,11 +282,19 @@ select.form-input option{background:var(--bg3);color:var(--text)}
       </button>
     </div>
     <button onclick="closeModal()" style="background:none;border:none;color:var(--dim);font-size:.75rem;cursor:pointer;margin-top:1rem;text-decoration:underline">Close</button>
+    <a href="https://discord.gg/q5avNbuy4" target="_blank" style="display:flex;align-items:center;gap:.625rem;margin-top:1.25rem;padding:.75rem 1rem;background:rgba(88,101,242,.1);border:1px solid rgba(88,101,242,.25);border-radius:9px;text-decoration:none;color:var(--text)">
+      <i class="fa-brands fa-discord" style="font-size:1.3rem;color:#5865f2"></i>
+      <div style="text-align:left">
+        <div style="font-size:.8rem;font-weight:700">Join our Discord</div>
+        <div style="font-size:.7rem;color:var(--muted)">Giveaways, events &amp; general support</div>
+      </div>
+      <i class="fa-solid fa-arrow-right" style="margin-left:auto;color:#5865f2;font-size:.8rem"></i>
+    </a>
   </div>
 </div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzr-0X7KY9UidGPGIYbPFUCsF8wwTAFEDDMLFYQTYBjFSy32g23QkAyIWZRzCc51dKr/exec";
+const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
 let selectedReason = "";
 let liveInterval = null;
 let currentReportId = null;
@@ -459,19 +467,47 @@ function renderReport(d) {
 
         ${notes ? `<div class="rr-notes"><div class="rr-notes-title"><i class="fa-solid fa-comments" style="margin-right:.35rem"></i>Staff Communication</div>${notes}</div>` : ''}
 
+        ${(d.status === 'Resolved' || d.status === 'Rejected') ? `
+        <div style="margin-top:1.25rem;padding:1rem;background:rgba(255,77,77,.06);border:1px solid rgba(255,77,77,.2);border-radius:9px">
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:.625rem">This report is closed. You can remove it permanently once you're done reviewing.</div>
+          <button onclick="closeReportNow('${d.reportId}')" id="closeReportBtn" style="width:100%;padding:.625rem;background:transparent;border:1px solid rgba(255,77,77,.35);color:var(--red);border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer">
+            <i class="fa-solid fa-trash"></i> Close &amp; Delete Report
+          </button>
+        </div>` : `
         <div class="followup-box">
           <div class="followup-title"><i class="fa-solid fa-reply" style="margin-right:.35rem"></i>Add Follow-up Info</div>
           <textarea id="followupText" class="followup-input" rows="2" placeholder="Add any additional information or evidence..."></textarea>
           <button class="followup-btn" id="followupBtn" onclick="sendFollowup('${d.reportId}')">
             <i class="fa-solid fa-paper-plane"></i> Send Follow-up
           </button>
-        </div>
+        </div>`}
 
         <div class="live-indicator">
           <span class="live-dot"></span> Live — refreshing every 10s
         </div>
       </div>
     </div>`;
+}
+
+function closeReportNow(reportId) {
+  if (!confirm('This will permanently delete the report. Continue?')) return;
+  const btn = document.getElementById('closeReportBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Closing...';
+  const params = new URLSearchParams();
+  params.append('action', 'close_report');
+  params.append('reportId', reportId);
+  fetch(SCRIPT_URL, { method: 'POST', body: params })
+    .then(r => r.json())
+    .then(() => {
+      stopLive();
+      document.getElementById('reportResult').innerHTML = `
+        <div class="empty-state">
+          <i class="fa-solid fa-circle-check" style="color:var(--accent)"></i>
+          <p>Report closed and removed. Thanks!</p>
+        </div>`;
+    })
+    .catch(() => { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-trash"></i> Close & Delete Report'; });
 }
 
 function sendFollowup(reportId) {
